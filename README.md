@@ -2,6 +2,17 @@
 
 Tobacco Town ABM reproduced in Netlogo 6.3.0
 
+# Folders
+### GIS-Tobacco-Town 
+Contains the GIS Model and all GIS files required
+### GIS_Files
+Contains raw GIS files for Glasgow 
+### Initialisation_Data
+Contains income and commute data for Hillhead and Glasgow Areas
+### Test-Models
+Contains models for testing specific components 
+1) Matched nodal model for GIS comparison
+2) Earner stratified purchase quantity test model 
 # Models
 
 "Tobacco-Town-California.nlogo" - Replication of the original tobacco town ABM for the four abstract Californian towns using the same empirical data and model design
