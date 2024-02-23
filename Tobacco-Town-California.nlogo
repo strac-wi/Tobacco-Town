@@ -95,6 +95,7 @@ place
 
 
 to setup
+  print "Start setup"
   reset-timer
 clear-all
 
@@ -178,6 +179,7 @@ clear-all
   set mode "all_at_home"
   set day 0
   update-plots
+  print "End setup"
 end
 
 
@@ -350,29 +352,34 @@ to set-fuel-price
 end
 
 to run-fast
+  print "Start run"
   if day = number-of-days [
     report-end-state
     print timer
     stop
   ]
 
+  write "asking smokers"
   ask smokers [
     set color white
     set inventory ( inventory - smoking-rate )
-    if inventory < smoking-rate [ purchase ]
+    if inventory < smoking-rate [
+      write "*"
+      purchase
+    ]
   ]
+  print ""
 
   set day (day + 1)
+  print day
 end
 
 to purchase
   set color red
   find-optimum-path
   get-costs
-
   set inventory ( inventory + ( packs-purchased * 20) )
   set purchases-made ( purchases-made + 1 )
-
   set total-distance-travelled lput distance-for-purchase total-distance-travelled
   set total-cost-for-purchase lput cost-for-purchase total-cost-for-purchase
   set total-cost-for-travel lput cost-for-travel total-cost-for-travel
@@ -792,7 +799,7 @@ number-of-days
 number-of-days
 1
 30
-30.0
+3.0
 1
 1
 days
@@ -1193,7 +1200,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.3.0
+NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
@@ -1396,7 +1403,7 @@ NetLogo 6.3.0
       <value value="75"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="Baseline" repetitions="30" runMetricsEveryStep="false">
+  <experiment name="Baseline (1)" repetitions="30" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>run-fast</go>
     <metric>average-costs</metric>
