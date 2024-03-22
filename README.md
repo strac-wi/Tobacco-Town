@@ -13,6 +13,7 @@ Contains income and commute data for Hillhead and Glasgow Areas
 Contains models for testing specific components 
 1) Matched nodal model for GIS comparison
 2) Earner stratified purchase quantity test model 
+
 # Models
 
 "Tobacco-Town-California.nlogo" - Replication of the original tobacco town ABM for the four abstract Californian towns using the same empirical data and model design
