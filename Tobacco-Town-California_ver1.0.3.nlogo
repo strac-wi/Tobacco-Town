@@ -27,6 +27,12 @@ globals [
   average-distance
   average-purchase-quantity
   end-density
+  setup-seed
+
+  median-cost        ;; list of median purchase cost of cigarettes for each patch
+  median-quantity    ;; list of median quantity of purchased cigarettes for each patch
+  median-wage        ;; list of median wage of smokers for each patch
+  median-rate        ;; list of median smoking rate of smokers for each patch
 ]
 turtles-own [ is-a-node ]
 smokers-own [
@@ -93,12 +99,16 @@ place
 patches-own [
   smokers-median-cost
   smokers-median-quantity
+  smokers-median-wage
+  smokers-median-rate
 ]
 
 
 
 to setup
-  print "Start setup"
+  set setup-seed 10
+  if random-seed? = false [random-seed setup-seed]
+  ;print "Start setup"
   reset-timer
   clear-all
   reset-ticks
@@ -131,6 +141,8 @@ to setup
   generate-env
   generate-workplaces
   generate-schools
+
+  if random-seed? = false [random-seed new-seed]
 
   if town-type = "Suburban Poor" [
     let wage-proportions  [0.067 0.207 0.442 0.546 0.689 0.894 0.962 0.992 0.996 1.0]
@@ -182,7 +194,8 @@ to setup
   set mode "all_at_home"
   set day 0
   update-plots
-  print "End setup"
+
+  ;print "End setup"
 end
 
 
@@ -226,12 +239,43 @@ to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
 
 ;; Wage Cumulative Proportions
 
+  ;wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
   set wage-proportions-list t-wage-proportions
   set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
 
+
+
+  ;; create smokers with random smoking rate every run
+  if random-seed? = false [random-seed new-seed]
   create-smokers (round ( population-density * ( world-width * world-height / 100 ))) [
 
-;; Transport Type
+    ;; Smoking rate initialization
+
+    let random-number-smoke random-float 1.0
+    let index-smoke 0
+    while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
+    let cigarettes item index-smoke cigarette-list
+    set smoking-rate cigarettes
+
+    set discount (0.54 + random-float 0.46)
+    set color white
+    set shape "person"
+    set size 0.6
+    set inventory random 40
+
+
+  ]
+
+  ;; set smokers properties with wages, homes and work locations following the initialisation seed
+  if random-seed? = false [random-seed setup-seed]
+  ask smokers [
+    ;; Wage initialization
+
+    let random-number-wage random-float 1.0
+    let index-wage 0
+    while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
+    set wage item index-wage wage-list
+    set hourly-wage ( (wage / 52) / 40 )
 
     let rand random-float 1.0
     set transport-type (ifelse-value
@@ -249,43 +293,19 @@ to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
         transport-type = "bike" [set speed 7.5]
         )
 
-;; Wage initialization
 
-    let random-number-wage random-float 1.0
-    let index-wage 0
-    while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
-    set wage item index-wage wage-list
+    ;; Homes and work selection
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; WAGE Uniform distribution?
-
-    set hourly-wage ( (wage / 52) / 40 )
-
-;; Smoking rate initialization
-
-    let random-number-smoke random-float 1.0
-    let index-smoke 0
-    while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
-    let cigarettes item index-smoke cigarette-list
-    set smoking-rate cigarettes
-
-    set discount (0.54 + random-float 0.46)
-    set color white
-    set shape "person"
-    set size 0.6
-    set inventory random 40
     set smokers_home one-of nodes
-
     ask smokers_home [
-
       set color white
       set shape "house"
       set size 0.4
       set is-a-home 1
     ]
-
     move-to smokers_home
-    set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
 
+    set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
     let s_work work
     let home_work_nodes 0
     ask smokers_home [
@@ -295,6 +315,74 @@ to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
     set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
 
   ]
+
+
+;  create-smokers (round ( population-density * ( world-width * world-height / 100 ))) [
+;
+;;; Transport Type
+;
+;    let rand random-float 1.0
+;    set transport-type (ifelse-value
+;        rand < t-car [ "car" ]
+;        rand < t-walk [ "walk" ]
+;        rand < t-bike [ "bike" ]
+;        [ "home" ]
+;        )
+;    if transport-type = "home" [ die ] ;; Tobacco Town paper does not model those that work from home
+;                                       ;; Proportions do not add up to 1
+;
+;    (ifelse
+;        transport-type = "car" [set speed 21.2]
+;        transport-type = "walk" [set speed 2.1]
+;        transport-type = "bike" [set speed 7.5]
+;        )
+;
+;;; Wage initialization
+;
+;    let random-number-wage random-float 1.0
+;    let index-wage 0
+;    while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
+;    set wage item index-wage wage-list
+;
+;    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; WAGE Uniform distribution?
+;
+;    set hourly-wage ( (wage / 52) / 40 )
+;
+;;; Smoking rate initialization
+;
+;    let random-number-smoke random-float 1.0
+;    let index-smoke 0
+;    while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
+;    let cigarettes item index-smoke cigarette-list
+;    set smoking-rate cigarettes
+;
+;    set discount (0.54 + random-float 0.46)
+;    set color white
+;    set shape "person"
+;    set size 0.6
+;    set inventory random 40
+;    set smokers_home one-of nodes
+;
+;    ask smokers_home [
+;
+;      set color white
+;      set shape "house"
+;      set size 0.4
+;      set is-a-home 1
+;    ]
+;
+;    move-to smokers_home
+;    set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
+;
+;    let s_work work
+;    let home_work_nodes 0
+;    ask smokers_home [
+;      set home_work_nodes nw:turtles-on-path-to s_work
+;    ]
+;
+;    set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
+;
+;  ]
 
 ;; Initialise lists
 
@@ -308,6 +396,7 @@ to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
   set total-purchase-quantity []
   ]
 
+  if random-seed? = false [random-seed new-seed]
 
 end
 
@@ -356,14 +445,16 @@ end
 
 to run-fast
   if day = 0 [reset-timer]
-  print "Start run"
+  ;print "Start run"
   if day = number-of-days [
     report-end-state
-    print timer
+    ;print timer
+    visualise
+    ask patch 0 21 [type "patch 0 21 = " type smokers-median-quantity]
     stop
   ]
 
-  write "asking smokers" type "\n"
+  ;write "asking smokers" type "\n"
   ask smokers [
     set color white
     set inventory ( inventory - smoking-rate )
@@ -376,7 +467,7 @@ to run-fast
 
   tick
   set day (day + 1)
-  print day
+  ;print day
 end
 
 ; smoker agent procedure
@@ -619,12 +710,20 @@ to visualise
     ifelse
     visualise-mode-patches = "Smokers avg. purchase cost" [
       ask turtles [hide-turtle]
-      ask patches with [count smokers-here > 0] [set smokers-median-cost median [smoker-average-purchase-cost] of smokers-here]
+      ask patches with [count smokers-here > 0] [
+        set smokers-median-cost median [smoker-average-purchase-cost] of smokers-here
+        set smokers-median-quantity median [smoker-average-purchase-quantity] of smokers-here
+        set smokers-median-wage median [wage] of smokers-here
+      ]
       ask patches with [count smokers-here > 0] [set pcolor scale-color red smokers-median-cost (max [smokers-median-cost] of patches) (min [smokers-median-cost] of patches)]
     ]
     visualise-mode-patches = "Smokers avg. purchase quantity" [
       ask turtles [hide-turtle]
-      ask patches with [count smokers-here > 0] [set smokers-median-quantity median [smoker-average-purchase-quantity] of smokers-here]
+      ask patches with [count smokers-here > 0] [
+        set smokers-median-cost median [smoker-average-purchase-cost] of smokers-here
+        set smokers-median-quantity median [smoker-average-purchase-quantity] of smokers-here
+        set smokers-median-wage median [wage] of smokers-here
+      ]
       ask patches with [count smokers-here > 0] [set pcolor scale-color red smokers-median-quantity (max [smokers-median-quantity] of patches) (min [smokers-median-quantity] of patches)]
     ]
     visualise-mode-patches = "None" [
@@ -653,6 +752,20 @@ to visualise
 
 end
 
+;; only called in behaviour space runs
+to update-globals
+  report-end-state
+  ask patches with [count smokers-here > 0] [
+    set smokers-median-cost median [smoker-average-purchase-cost] of smokers-here
+    set smokers-median-quantity median [smoker-average-purchase-quantity] of smokers-here
+    set smokers-median-wage median [wage] of smokers-here
+    set smokers-median-rate median [smoking-rate] of smokers-here
+  ]
+  set median-quantity map [p -> [(list pxcor pycor smokers-median-quantity)] of p] (sort patches)
+  set median-cost map [p -> [(list pxcor pycor smokers-median-cost)] of p] (sort patches)
+  set median-wage map [p -> [(list pxcor pycor smokers-median-wage)] of p] (sort patches)
+  set median-rate map [p -> [(list pxcor pycor smokers-median-rate)] of p] (sort patches)
+end
 
 
 
@@ -960,7 +1073,7 @@ CHOOSER
 visualise-mode-patches
 visualise-mode-patches
 "Smokers avg. purchase cost" "Smokers avg. purchase quantity" "None"
-2
+0
 
 BUTTON
 412
@@ -1027,7 +1140,7 @@ CHOOSER
 visualise-mode-turtles
 visualise-mode-turtles
 "All agents" "Smokers only" "None"
-1
+2
 
 TEXTBOX
 232
@@ -1038,6 +1151,17 @@ Patches
 12
 0.0
 1
+
+SWITCH
+7
+195
+136
+228
+random-seed?
+random-seed?
+1
+1
+-1000
 
 @#$#@#$#@
 ## PATHFINDING 
@@ -1058,6 +1182,24 @@ Model uses distance off commute to retailer:
 All other variables from Tobacco Town Supplement
 
 ## Updates
+
+Version 1.0.3 (YG)
+
+1. Added the ability to replicate the same initial state at initialisation
+	- Added a `random-seed?` switch representing whether the seed used during the setup of the spatial context is random or not
+	- Modified the `setup` function to use a `random-seed` of 10 if `random-seed?` is switched off
+	- Modified the `generate-smokers` function to control which parameters follow the `random-seed` at setup
+		- The parameters following the setup seed are the: (1) wages, (2) smokers' homes, (3) smokers' work locations and (4) smokers' commute patches between work and home.
+		- The parameter following a random seed is the smoking rate
+2. Monitors
+	- Added the global following global parameters to monitor their respective patch paramters as a list for all patches. The lists are sorted based on patches x and y coordinates.
+		- `median-cost` --> `smokers-median-cost`
+		- `median-quantity` --> `smokers-median-quantity`
+		- `median-wage` --> `smokers-median-wage`
+		- `median-rate` --> `smokers-median-rate`
+	- Added an `update-globals` function to update the `median-cost` and `median-quantity` at any time step. This is only called in the behaviour space experiments.
+3. Behaviour space
+	- Added an experiment to observe the spatial propagational uncertainty from wages at initialisation to median purchase cost and quantity
 
 Version 1.0.2 (YG)
 
@@ -1612,6 +1754,47 @@ NetLogo 6.3.0
     </enumeratedValueSet>
     <enumeratedValueSet variable="retailer-min-distance-buffer">
       <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="retailer-density-cap">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="uncertainty_smokingrate" repetitions="1000" runMetricsEveryStep="true">
+    <setup>setup
+update-globals</setup>
+    <go>run-fast
+update-globals</go>
+    <exitCondition>ticks = number-of-days</exitCondition>
+    <metric>median-quantity</metric>
+    <metric>median-cost</metric>
+    <metric>median-wage</metric>
+    <metric>median-rate</metric>
+    <enumeratedValueSet variable="visualise-mode-patches">
+      <value value="&quot;Smokers avg. purchase cost&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="visualise-mode-turtles">
+      <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-days">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="buy-cartons?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="retailer-removal">
+      <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="town-type">
+      <value value="&quot;Urban Poor&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="school-buffer">
+      <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="retailer-min-distance-buffer">
+      <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="random-seed?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="retailer-density-cap">
       <value value="100"/>
