@@ -18,7 +18,7 @@ Contains models for testing specific components
 
 "Tobacco-Town-California.nlogo" - Replication of the original tobacco town ABM for the four abstract Californian towns using the same empirical data and model design
 
-"Tobacco-Town-California_ver1.0.2.nlogo" - An optimised version of the Californian model with visualisation options for patches and agents
+"Tobacco-Town-California_ver1.0.3.nlogo" - An optimised version of the Californian model with visualisation options for patches and agents and a fixed initialisation spatial state
 
 "Tobacc-Town-Glasgow.nlogo" - An adaptation of the original model using Glasgow empirical data
 
