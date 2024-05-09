@@ -76,6 +76,7 @@ smokers-own [
   purchases-made
   cost-equation
   cost-equation-per-pack
+  my-neighbourhood
 ]
 nodes-own [
   place
@@ -83,6 +84,7 @@ nodes-own [
   is-a-workplace
   is-a-school
   is-a-home
+  debug
 ]
 outlets-own [
   outlet_place
@@ -113,97 +115,264 @@ to setup
   clear-all
   reset-ticks
 
+  ;; generate the nodes and links
+  generate-env
+  ;; Set population-density, workplace-density, school density
   (ifelse
-    town-type = "Suburban Poor" [ set population-density 20.8 ]
-    town-type = "Suburban Rich" [ set population-density 18.7 ]
-    town-type = "Urban Poor" [ set population-density 38.3 ]
-    town-type = "Urban Rich" [ set population-density 31.2 ]
+    town-type = "Suburban Poor" [
+      set population-density 20.8
+      set workplace-density 71.01
+      set school-density 1.41
+      generate-workplaces workplace-density "all"
+      generate-schools school-density "all"
+    ]
+    town-type = "Suburban Rich" [
+      set population-density 18.7
+      set workplace-density 64.3
+      set school-density 1.09
+      generate-workplaces workplace-density "all"
+      generate-schools school-density "all"
+    ]
+    town-type = "Urban Poor" [
+      set population-density 38.3
+      set workplace-density 72.81
+      set school-density 4.49
+      generate-workplaces workplace-density "all"
+      generate-schools school-density "all"
+    ]
+    town-type = "Urban Rich" [
+      set population-density 31.2
+      set workplace-density 219.62
+      set school-density 2.79
+      generate-workplaces workplace-density "all"
+      generate-schools school-density "all"
+    ]
+    town-type = "Urban Poor | Urban Rich" [
+      ;; Urban poor
+      set population-density 38.3
+      set workplace-density 72.81
+      set school-density 4.49
+      generate-workplaces workplace-density "left"
+      generate-schools school-density "left"
+      ;; Urban rich
+      set population-density 31.2
+      set workplace-density 219.62
+      set school-density 2.79
+      generate-workplaces workplace-density "right"
+      generate-schools school-density "right"
+    ]
+    town-type = "Urban Poor (no work or outlets) | Urban Rich" [
+      ;; Urban rich
+      set population-density 31.2
+      set workplace-density 219.62
+      set school-density 2.79
+      generate-workplaces workplace-density "right"
+      generate-schools school-density "right"
+    ]
   )
 
-  ;; Set workplace-density
-  (ifelse
-    town-type = "Suburban Poor" [ set workplace-density 71.01 ]
-    town-type = "Suburban Rich" [ set workplace-density 64.3 ]
-    town-type = "Urban Poor" [ set workplace-density 72.81 ]
-    town-type = "Urban Rich" [ set workplace-density 219.62 ]
-  )
-
-  (ifelse
-    town-type = "Suburban Poor" [ set school-density 1.41 ]
-    town-type = "Suburban Rich" [ set school-density 1.09 ]
-    town-type = "Urban Poor" [ set school-density 4.49 ]
-    town-type = "Urban Rich" [ set school-density 2.79 ]
-  )
+;  ;; Set workplace-density
+;  (ifelse
+;    town-type = "Suburban Poor" [ set workplace-density 71.01 ]
+;    town-type = "Suburban Rich" [ set workplace-density 64.3 ]
+;    town-type = "Urban Poor" [ set workplace-density 72.81 ]
+;    town-type = "Urban Rich" [ set workplace-density 219.62 ]
+;  )
+;
+;  (ifelse
+;    town-type = "Suburban Poor" [ set school-density 1.41 ]
+;    town-type = "Suburban Rich" [ set school-density 1.09 ]
+;    town-type = "Urban Poor" [ set school-density 4.49 ]
+;    town-type = "Urban Rich" [ set school-density 2.79 ]
+;  )
 
   set efficiency 18.6 ;; Based on US Gov Data
   set vl 1 ;; Linear value of time parameter - set to 1 for all agents
 
-  generate-env
-  generate-workplaces
-  generate-schools
+;  generate-env
+;  generate-workplaces-old
+;  generate-schools
 
   if random-spatial? = false [random-seed new-seed]
 
   if town-type = "Suburban Poor" [
     let wage-proportions  [0.067 0.207 0.442 0.546 0.689 0.894 0.962 0.992 0.996 1.0]
     (ifelse
-      smokers-parameters = "Random wages and smoking rates (V)" [generate-smokers-V  wage-proportions 0.9306  0.987  0.9817]
-      smokers-parameters = "Random wages (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.9306  0.987  0.9817]
-      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.9306  0.987  0.9817]
+      smokers-parameters = "Random (V)" [generate-smokers-V  wage-proportions 0.9306  0.987  0.9817 "all"]
+      smokers-parameters = "Random (V routes)" [generate-smokers-V-routes  wage-proportions 0.9306  0.987  0.9817 "all"]
+      smokers-parameters = "Random rate (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.9306  0.987  0.9817 "all"]
+      smokers-parameters = "Random inventory (VC inventory)" [generate-smokers-VC-inventory wage-proportions 0.9306  0.987  0.9817 "all"]
+      smokers-parameters = "Random wage (VC wage)" [generate-smokers-VC-wage wage-proportions 0.9306  0.987  0.9817 "all"]
+      smokers-parameters = "Random transport (VC transport)" [generate-smokers-VC-transport wage-proportions 0.9306  0.987  0.9817 "all"]
+      smokers-parameters = "Random routes (VC routes)" [generate-smokers-VC-routes wage-proportions 0.9306  0.987  0.9817 "all"]
+      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.9306  0.987  0.9817 "all"]
     )
+    if random-spatial? = false [random-seed setup-seed]
     ;generate-smokers  wage-proportions 0.9306  0.987  0.9817
-    generate-outlet-type  "Convenience" orange 2.25 5.81 1.13 4.09
-    generate-outlet-type  "Drug" orange 0.45 5.52 0.86 4.27
-    generate-outlet-type  "Grocery" orange 0.76 6.06 1.21 4.46
-    generate-outlet-type  "Liquor" orange 0.4  6.35 1.21 4.61
-    generate-outlet-type  "Mass" orange 0.11 6.12 0.86 4.88
-    generate-outlet-type  "Tobacconist" orange 0.16 5.77 0.45 4.89
+    generate-outlet-type  "Convenience" orange 2.25 5.81 1.13 4.09 "all"
+    generate-outlet-type  "Drug" orange 0.45 5.52 0.86 4.27 "all"
+    generate-outlet-type  "Grocery" orange 0.76 6.06 1.21 4.46 "all"
+    generate-outlet-type  "Liquor" orange 0.4  6.35 1.21 4.61 "all"
+    generate-outlet-type  "Mass" orange 0.11 6.12 0.86 4.88 "all"
+    generate-outlet-type  "Tobacconist" orange 0.16 5.77 0.45 4.89 "all"
+    if random-spatial? = false [random-seed new-seed]
   ]
 
   if town-type = "Suburban Rich" [
     let wage-proportions  [0.013 0.026 0.059 0.093 0.178 0.383 0.554 0.822 0.941 1.0]
     (ifelse
-      smokers-parameters = "Random wages and smoking rates (V)" [generate-smokers-V  wage-proportions 0.8697 0.8824 0.9231]
-      smokers-parameters = "Random wages (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.8697 0.8824 0.9231]
-      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.8697 0.8824 0.9231]
+      smokers-parameters = "Random (V)" [generate-smokers-V  wage-proportions 0.8697 0.8824 0.9231 "all"]
+      smokers-parameters = "Random (V routes)" [generate-smokers-V-routes  wage-proportions 0.8697 0.8824 0.9231 "all"]
+      smokers-parameters = "Random rate (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.8697 0.8824 0.9231 "all"]
+      smokers-parameters = "Random inventory (VC inventory)" [generate-smokers-VC-inventory wage-proportions 0.8697 0.8824 0.9231 "all"]
+      smokers-parameters = "Random wage (VC wage)" [generate-smokers-VC-wage wage-proportions 0.8697 0.8824 0.9231 "all"]
+      smokers-parameters = "Random transport (VC transport)" [generate-smokers-VC-transport wage-proportions 0.8697 0.8824 0.9231 "all"]
+      smokers-parameters = "Random routes (VC routes)" [generate-smokers-VC-routes wage-proportions 0.8697 0.8824 0.9231 "all"]
+      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.8697 0.8824 0.9231 "all"]
     )
+    if random-spatial? = false [random-seed setup-seed]
     ;generate-smokers  wage-proportions 0.8697 0.8824 0.9231
-    generate-outlet-type  "Convenience" orange 1.24 6.37 1.29 3.99
-    generate-outlet-type  "Drug" orange 0.25 6.29 1.40 4.34
-    generate-outlet-type  "Grocery" orange 0.42 6.49 1.31 4.24
-    generate-outlet-type  "Liquor" orange  0.22 6.34 1.09 5.09
-    generate-outlet-type  "Mass" orange 0.06 6.54 0.0001 6.54
-    generate-outlet-type  "Tobacconist" orange   0.09  6.18 1.81 4.99  ]
+    generate-outlet-type  "Convenience" orange 1.24 6.37 1.29 3.99 "all"
+    generate-outlet-type  "Drug" orange 0.25 6.29 1.40 4.34 "all"
+    generate-outlet-type  "Grocery" orange 0.42 6.49 1.31 4.24 "all"
+    generate-outlet-type  "Liquor" orange  0.22 6.34 1.09 5.09 "all"
+    generate-outlet-type  "Mass" orange 0.06 6.54 0.0001 6.54 "all"
+    generate-outlet-type  "Tobacconist" orange   0.09  6.18 1.81 4.99 "all"
+    if random-spatial? = false [random-seed new-seed]
+  ]
+
 
   if town-type = "Urban Poor" [
     let wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
     (ifelse
-      smokers-parameters = "Random wages and smoking rates (V)" [generate-smokers-V  wage-proportions 0.8797 0.892 0.9817]
-      smokers-parameters = "Random wages (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.8797 0.892 0.9817]
-      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.8797 0.892 0.9817]
+      smokers-parameters = "Random (V)" [generate-smokers-V  wage-proportions 0.8797 0.892 0.9817 "all"]
+      smokers-parameters = "Random (V routes)" [generate-smokers-V-routes  wage-proportions 0.8797 0.892 0.9817 "all"]
+      smokers-parameters = "Random rate (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.8797 0.892 0.9817 "all"]
+      smokers-parameters = "Random inventory (VC inventory)" [generate-smokers-VC-inventory wage-proportions 0.8797 0.892 0.9817 "all"]
+      smokers-parameters = "Random wage (VC wage)" [generate-smokers-VC-wage wage-proportions 0.8797 0.892 0.9817 "all"]
+      smokers-parameters = "Random transport (VC transport)" [generate-smokers-VC-transport wage-proportions 0.8797 0.892 0.9817 "all"]
+      smokers-parameters = "Random routes (VC routes)" [generate-smokers-VC-routes wage-proportions 0.8797 0.892 0.9817 "all"]
+      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.8797 0.892 0.9817 "all"]
     )
+    if random-spatial? = false [random-seed setup-seed]
     ;generate-smokers  wage-proportions 0.8797 0.892 0.9817
-    generate-outlet-type  "Convenience" orange 6.59 6.71 1.32 4.39
-    generate-outlet-type  "Drug" orange 1.33 6.08 1.47 4.28
-    generate-outlet-type  "Grocery" orange 2.21 6.99 1.64 4.50
-    generate-outlet-type  "Liquor" orange  1.18 7.37 1.07 5.64
-    generate-outlet-type  "Mass" orange 0.31 8.08 0.0001 8.08
-    generate-outlet-type  "Tobacconist" orange 0.47 4.91 0.70 4.50   ]
+    generate-outlet-type  "Convenience" orange 6.59 6.71 1.32 4.39 "all"
+    generate-outlet-type  "Drug" orange 1.33 6.08 1.47 4.28 "all"
+    generate-outlet-type  "Grocery" orange 2.21 6.99 1.64 4.50 "all"
+    generate-outlet-type  "Liquor" orange  1.18 7.37 1.07 5.64 "all"
+    generate-outlet-type  "Mass" orange 0.31 8.08 0.0001 8.08 "all"
+    generate-outlet-type  "Tobacconist" orange 0.47 4.91 0.70 4.50 "all"
+    if random-spatial? = false [random-seed new-seed]
+  ]
 
   if town-type = "Urban Rich" [
     let wage-proportions  [0.041 0.073 0.13 0.188 0.284 0.416 0.534 0.766 0.888 1.0]
     (ifelse
-      smokers-parameters = "Random wages and smoking rates (V)" [generate-smokers-V  wage-proportions 0.7847 0.8204 0.947]
-      smokers-parameters = "Random wages (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.7847 0.8204 0.947]
-      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.7847 0.8204 0.947]
+      smokers-parameters = "Random (V)" [generate-smokers-V  wage-proportions 0.7847 0.8204 0.947 "all"]
+      smokers-parameters = "Random (V routes)" [generate-smokers-V-routes  wage-proportions 0.7847 0.8204 0.947 "all"]
+      smokers-parameters = "Random rate (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.7847 0.8204 0.947 "all"]
+      smokers-parameters = "Random inventory (VC inventory)" [generate-smokers-VC-inventory wage-proportions 0.7847 0.8204 0.947 "all"]
+      smokers-parameters = "Random wage (VC wage)" [generate-smokers-VC-wage wage-proportions 0.7847 0.8204 0.947 "all"]
+      smokers-parameters = "Random transport (VC transport)" [generate-smokers-VC-transport wage-proportions 0.7847 0.8204 0.947 "all"]
+      smokers-parameters = "Random routes (VC routes)" [generate-smokers-VC-routes wage-proportions 0.7847 0.8204 0.947 "all"]
+      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.7847 0.8204 0.947 "all"]
     )
-    generate-smokers  wage-proportions 0.7847 0.8204 0.947
-    generate-outlet-type  "Convenience" orange 4.81 6.48 1.68 4.88
-    generate-outlet-type  "Drug" orange 0.97 5.50 1.14 4.93
-    generate-outlet-type  "Grocery" orange 1.61 6.81 1.63 5.09
-    generate-outlet-type  "Liquor" orange 0.86  6.11 1.15 4.93
-    generate-outlet-type  "Mass" orange 0.23 5.09 0.0001 5.09
-    generate-outlet-type  "Tobacconist" orange 0.34  6.68 2.74 3.98  ]
+    if random-spatial? = false [random-seed setup-seed]
+    ;generate-smokers  wage-proportions 0.7847 0.8204 0.947
+    generate-outlet-type  "Convenience" orange 4.81 6.48 1.68 4.88 "all"
+    generate-outlet-type  "Drug" orange 0.97 5.50 1.14 4.93 "all"
+    generate-outlet-type  "Grocery" orange 1.61 6.81 1.63 5.09 "all"
+    generate-outlet-type  "Liquor" orange 0.86  6.11 1.15 4.93 "all"
+    generate-outlet-type  "Mass" orange 0.23 5.09 0.0001 5.09 "all"
+    generate-outlet-type  "Tobacconist" orange 0.34  6.68 2.74 3.98 "all"
+    if random-spatial? = false [random-seed new-seed]
+  ]
+
+  if town-type = "Urban Poor | Urban Rich" [
+    ;; urban poor wage proportions
+    let wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
+    (ifelse
+      smokers-parameters = "Random (V)" [generate-smokers-V  wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random (V routes)" [generate-smokers-V-routes  wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random rate (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random inventory (VC inventory)" [generate-smokers-VC-inventory wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random wage (VC wage)" [generate-smokers-VC-wage wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random transport (VC transport)" [generate-smokers-VC-transport wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random routes (VC routes)" [generate-smokers-VC-routes wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.8797 0.892 0.9817 "left"]
+    )
+
+    ;; urban rich wage proportions
+    set wage-proportions  [0.041 0.073 0.13 0.188 0.284 0.416 0.534 0.766 0.888 1.0]
+    (ifelse
+      smokers-parameters = "Random (V)" [generate-smokers-V  wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random (V routes)" [generate-smokers-V-routes  wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random rate (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random inventory (VC inventory)" [generate-smokers-VC-inventory wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random wage (VC wage)" [generate-smokers-VC-wage wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random transport (VC transport)" [generate-smokers-VC-transport wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random routes (VC routes)" [generate-smokers-VC-routes wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.7847 0.8204 0.947 "right"]
+    )
+
+    if random-spatial? = false [random-seed setup-seed]
+    ;; urban poor outlets
+    generate-outlet-type  "Convenience" orange 6.59 6.71 1.32 4.39 "left"
+    generate-outlet-type  "Drug" orange 1.33 6.08 1.47 4.28 "left"
+    generate-outlet-type  "Grocery" orange 2.21 6.99 1.64 4.50 "left"
+    generate-outlet-type  "Liquor" orange  1.18 7.37 1.07 5.64 "left"
+    generate-outlet-type  "Mass" orange 0.31 8.08 0.0001 8.08 "left"
+    generate-outlet-type  "Tobacconist" orange 0.47 4.91 0.70 4.50 "left"
+
+    ;; urban rich outlets
+    generate-outlet-type  "Convenience" orange 4.81 6.48 1.68 4.88 "right"
+    generate-outlet-type  "Drug" orange 0.97 5.50 1.14 4.93 "right"
+    generate-outlet-type  "Grocery" orange 1.61 6.81 1.63 5.09 "right"
+    generate-outlet-type  "Liquor" orange 0.86  6.11 1.15 4.93 "right"
+    generate-outlet-type  "Mass" orange 0.23 5.09 0.0001 5.09 "right"
+    generate-outlet-type  "Tobacconist" orange 0.34  6.68 2.74 3.98 "right"
+    if random-spatial? = false [random-seed new-seed]
+  ]
+
+  if town-type = "Urban Poor (no work or outlets) | Urban Rich" [
+    ;; urban poor wage
+    ;; urban poor wage proportions
+    let wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
+    (ifelse
+      smokers-parameters = "Random (V)" [generate-smokers-V  wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random (V routes)" [generate-smokers-V-routes  wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random rate (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random inventory (VC inventory)" [generate-smokers-VC-inventory wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random wage (VC wage)" [generate-smokers-VC-wage wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random transport (VC transport)" [generate-smokers-VC-transport wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "Random routes (VC routes)" [generate-smokers-VC-routes wage-proportions 0.8797 0.892 0.9817 "left"]
+      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.8797 0.892 0.9817 "left"]
+    )
+
+    ;; urban rich wage proportions
+    set wage-proportions  [0.041 0.073 0.13 0.188 0.284 0.416 0.534 0.766 0.888 1.0]
+    (ifelse
+      smokers-parameters = "Random (V)" [generate-smokers-V  wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random (V routes)" [generate-smokers-V-routes  wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random rate (VC rates)" [generate-smokers-VC-rate  wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random inventory (VC inventory)" [generate-smokers-VC-inventory wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random wage (VC wage)" [generate-smokers-VC-wage wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random transport (VC transport)" [generate-smokers-VC-transport wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "Random routes (VC routes)" [generate-smokers-VC-routes wage-proportions 0.7847 0.8204 0.947 "right"]
+      smokers-parameters = "All random (ignore random-spatial?)" [generate-smokers  wage-proportions 0.7847 0.8204 0.947 "right"]
+    )
+
+    if random-spatial? = false [random-seed setup-seed]
+
+    ;; urban rich outlets
+    generate-outlet-type  "Convenience" orange 4.81 6.48 1.68 4.88 "right"
+    generate-outlet-type  "Drug" orange 0.97 5.50 1.14 4.93 "right"
+    generate-outlet-type  "Grocery" orange 1.61 6.81 1.63 5.09 "right"
+    generate-outlet-type  "Liquor" orange 0.86  6.11 1.15 4.93 "right"
+    generate-outlet-type  "Mass" orange 0.23 5.09 0.0001 5.09 "right"
+    generate-outlet-type  "Tobacconist" orange 0.34  6.68 2.74 3.98 "right"
+    if random-spatial? = false [random-seed new-seed]
+  ]
 
   set-fuel-price
   density-reduction
@@ -236,13 +405,31 @@ to generate-env
   ]
 end
 
-to generate-workplaces
-
-  if workplace-density > ( (count nodes) / ( world-width * world-height / 100 ) ) [ set workplace-density ( (count nodes) / ( world-width * world-height / 100 ) ) ] ;; If workplace density saturates nodes then workplace-density is set to node-density
-
-  create-workplaces ( round ( (world-width * world-height / 100 ) * workplace-density )) [
-    move-to one-of nodes with [ is-a-workplace = 0 ]
-    ask nodes-here [ set is-a-workplace 1 ]
+to generate-workplaces [density neighbourhood]
+  ;; find the neighbourhood nodes (left or right or all the space) and calculate the number of workplaces to create
+  let neighbourhood-nodes nobody
+  let n-workplaces 0
+  (ifelse
+    neighbourhood = "left" [
+      set neighbourhood-nodes nodes with [xcor < max-pxcor / 2]
+      if density > ( (count neighbourhood-nodes) / ( world-width * world-height / 200 ) ) [ set density ( (count neighbourhood-nodes) / ( world-width * world-height / 200 ) ) ] ;; If workplace density saturates nodes then workplace-density is set to node-density
+      set n-workplaces round ( (world-width * world-height / 200 ) * density )
+    ]
+    neighbourhood = "right" [
+      set neighbourhood-nodes nodes with [xcor > max-pxcor / 2]
+      if density > ( (count neighbourhood-nodes) / ( world-width * world-height / 200 ) ) [ set density ( (count neighbourhood-nodes) / ( world-width * world-height / 200 ) ) ] ;; If workplace density saturates nodes then workplace-density is set to node-density
+      set n-workplaces round ( (world-width * world-height / 200 ) * density )
+    ]
+    neighbourhood = "all" [
+      set neighbourhood-nodes nodes
+      if density > ( (count neighbourhood-nodes) / ( world-width * world-height / 100 ) ) [ set density ( (count neighbourhood-nodes) / ( world-width * world-height / 100 ) ) ] ;; If workplace density saturates nodes then workplace-density is set to node-density
+      set n-workplaces round ( (world-width * world-height / 100 ) * density )
+    ]
+  )
+  ;; create workplaces
+  create-workplaces ( n-workplaces )  [
+    move-to one-of neighbourhood-nodes with [ is-a-workplace = 0 ]
+    ask nodes-here [ set is-a-workplace 1 set debug neighbourhood]
     set color grey
     set shape "box"
     set size 0.4
@@ -250,12 +437,28 @@ to generate-workplaces
 
 end
 
-to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
+to generate-smokers [t-wage-proportions t-car t-walk t-bike neighbourhood]
 
 ;;Smoking rate cumulative proportions
 
   set smoking-proportions-list [0.006 0.02 0.044 0.072 0.132 0.164 0.193 0.217 0.222 0.465 0.468 0.493 0.495 0.497 0.581 0.584 0.588 0.592 0.889 0.907 0.963 0.966 0.994 0.995 0.996 1.0]
   set cigarette-list [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 20 25 30 35 40 45 50 60]
+  let home-nodes nobody
+  let n-smokers 0
+  (ifelse
+    neighbourhood = "left" [
+      set home-nodes nodes with [pxcor < max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "right" [
+      set home-nodes nodes with [pxcor > max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "all" [
+      set home-nodes nodes
+      set n-smokers round ( population-density * ( world-width * world-height / 100 ))
+    ]
+  )
 
 ;; Wage Cumulative Proportions
 
@@ -263,8 +466,10 @@ to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
   set wage-proportions-list t-wage-proportions
   set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
 
+
+
   ;; create smokers
-  create-smokers (round ( population-density * ( world-width * world-height / 100 ))) [
+  create-smokers (n-smokers) [
 
     ;; Smoking rate initialization
 
@@ -308,7 +513,7 @@ to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
 
     ;; Homes and work selection
 
-    set smokers_home one-of nodes
+    set smokers_home one-of home-nodes
     ask smokers_home [
       set color white
       set shape "house"
@@ -326,11 +531,13 @@ to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
 
     set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
 
+    ;; store neighbourhood type
+    set my-neighbourhood neighbourhood
   ]
 
   ;; Initialise lists
 
-  ask smokers [
+  ask smokers with [my-neighbourhood = neighbourhood] [
   set total-distance-travelled []
   set total-cost-for-purchase []
   set total-cost-for-travel []
@@ -343,26 +550,38 @@ to generate-smokers [t-wage-proportions t-car t-walk t-bike ]
 end
 
 ;; generate smokers with everything random except homes, work and routes
-to generate-smokers-V [t-wage-proportions t-car t-walk t-bike ]
+to generate-smokers-V [t-wage-proportions t-car t-walk t-bike neighbourhood]
 
 ;;Smoking rate cumulative proportions
-
   set smoking-proportions-list [0.006 0.02 0.044 0.072 0.132 0.164 0.193 0.217 0.222 0.465 0.468 0.493 0.495 0.497 0.581 0.584 0.588 0.592 0.889 0.907 0.963 0.966 0.994 0.995 0.996 1.0]
   set cigarette-list [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 20 25 30 35 40 45 50 60]
+  let home-nodes nobody
+  let n-smokers 0
+  (ifelse
+    neighbourhood = "left" [
+      set home-nodes nodes with [pxcor < max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "right" [
+      set home-nodes nodes with [pxcor > max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "all" [
+      set home-nodes nodes
+      set n-smokers round ( population-density * ( world-width * world-height / 100 ))
+    ]
+  )
 
 ;; Wage Cumulative Proportions
-
   ;wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
   set wage-proportions-list t-wage-proportions
   set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
 
   ;; create smokers with fixed home and work locations
   if random-spatial? = false [random-seed setup-seed]
-  create-smokers (round ( population-density * ( world-width * world-height / 100 ))) [
-
+  create-smokers (n-smokers) [
     ;; Homes and work selection
-
-    set smokers_home one-of nodes
+    set smokers_home one-of home-nodes
     ask smokers_home [
       set color white
       set shape "house"
@@ -370,8 +589,8 @@ to generate-smokers-V [t-wage-proportions t-car t-walk t-bike ]
       set is-a-home 1
     ]
     move-to smokers_home
-
     set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
+    ;; routes
     let s_work work
     let home_work_nodes 0
     ask smokers_home [
@@ -380,14 +599,14 @@ to generate-smokers-V [t-wage-proportions t-car t-walk t-bike ]
 
     set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
 
-
+    ;; store neighbourhood type
+    set my-neighbourhood neighbourhood
   ]
 
   ;; set smokers properties with random smoking rates and wages
   if random-spatial? = false [random-seed new-seed]
-  ask smokers [
+  ask smokers with [my-neighbourhood = neighbourhood] [
     ;; Smoking rate initialization
-
     let random-number-smoke random-float 1.0
     let index-smoke 0
     while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
@@ -401,7 +620,6 @@ to generate-smokers-V [t-wage-proportions t-car t-walk t-bike ]
     set inventory random 40
 
     ;; Wage initialization
-
     let random-number-wage random-float 1.0
     let index-wage 0
     while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
@@ -427,8 +645,7 @@ to generate-smokers-V [t-wage-proportions t-car t-walk t-bike ]
   ]
 
 ;; Initialise lists
-
-  ask smokers [
+  ask smokers with [my-neighbourhood = neighbourhood] [
   set total-distance-travelled []
   set total-cost-for-purchase []
   set total-cost-for-travel []
@@ -443,27 +660,39 @@ to generate-smokers-V [t-wage-proportions t-car t-walk t-bike ]
 end
 
 ;; generate smokers with everything random except smoking rates, homes, work and routes
-to generate-smokers-VC-rate [t-wage-proportions t-car t-walk t-bike ]
+to generate-smokers-VC-rate [t-wage-proportions t-car t-walk t-bike neighbourhood]
 
 ;;Smoking rate cumulative proportions
-
   set smoking-proportions-list [0.006 0.02 0.044 0.072 0.132 0.164 0.193 0.217 0.222 0.465 0.468 0.493 0.495 0.497 0.581 0.584 0.588 0.592 0.889 0.907 0.963 0.966 0.994 0.995 0.996 1.0]
   set cigarette-list [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 20 25 30 35 40 45 50 60]
+  let home-nodes nobody
+  let n-smokers 0
+  (ifelse
+    neighbourhood = "left" [
+      set home-nodes nodes with [pxcor < max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "right" [
+      set home-nodes nodes with [pxcor > max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "all" [
+      set home-nodes nodes
+      set n-smokers round ( population-density * ( world-width * world-height / 100 ))
+    ]
+  )
 
 ;; Wage Cumulative Proportions
-
   ;wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
   set wage-proportions-list t-wage-proportions
   set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
 
-
   ;; create smokers with fixed home and work locations
   if random-spatial? = false [random-seed setup-seed]
-  create-smokers (round ( population-density * ( world-width * world-height / 100 ))) [
+  create-smokers (n-smokers) [
 
     ;; Homes and work selection
-
-    set smokers_home one-of nodes
+    set smokers_home one-of home-nodes
     ask smokers_home [
       set color white
       set shape "house"
@@ -471,48 +700,50 @@ to generate-smokers-VC-rate [t-wage-proportions t-car t-walk t-bike ]
       set is-a-home 1
     ]
     move-to smokers_home
-
     set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
+    ;; routes
     let s_work work
     let home_work_nodes 0
     ask smokers_home [
       set home_work_nodes nw:turtles-on-path-to s_work
     ]
-
     set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
 
+    ;; store neighbourhood type
+    set my-neighbourhood neighbourhood
 
   ]
 
-  ;; non-random wages
-  ask smokers [
+  ;; fixed smoking rates
+  ask smokers with [my-neighbourhood = neighbourhood] [
     ;; Smoking rate initialization
-
     let random-number-smoke random-float 1.0
     let index-smoke 0
     while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
     let cigarettes item index-smoke cigarette-list
     set smoking-rate cigarettes
+  ]
 
+  ;; set smokers properties with everything random except smoking rates
+  if random-spatial? = false [random-seed new-seed]
+  ask smokers with [my-neighbourhood = neighbourhood] [
+    ;; Discount
     set discount (0.54 + random-float 0.46)
     set color white
     set shape "person"
     set size 0.6
+
+    ;; inventory
     set inventory random 40
 
-  ]
-
-  ;; set smokers properties with random smoking rates and wages
-  if random-spatial? = false [random-seed new-seed]
-  ask smokers [
     ;; Wage initialization
-
     let random-number-wage random-float 1.0
     let index-wage 0
     while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
     set wage item index-wage wage-list
     set hourly-wage ( (wage / 52) / 40 )
 
+    ;; transport type
     let rand random-float 1.0
     set transport-type (ifelse-value
       rand < t-car [ "car" ]
@@ -547,16 +778,613 @@ to generate-smokers-VC-rate [t-wage-proportions t-car t-walk t-bike ]
 
 end
 
+;; generate smokers with everything random except inventory, homes, work and routes
+to generate-smokers-VC-inventory [t-wage-proportions t-car t-walk t-bike neighbourhood]
+
+;;Smoking rate cumulative proportions
+  set smoking-proportions-list [0.006 0.02 0.044 0.072 0.132 0.164 0.193 0.217 0.222 0.465 0.468 0.493 0.495 0.497 0.581 0.584 0.588 0.592 0.889 0.907 0.963 0.966 0.994 0.995 0.996 1.0]
+  set cigarette-list [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 20 25 30 35 40 45 50 60]
+  let home-nodes nobody
+  let n-smokers 0
+  (ifelse
+    neighbourhood = "left" [
+      set home-nodes nodes with [pxcor < max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "right" [
+      set home-nodes nodes with [pxcor > max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "all" [
+      set home-nodes nodes
+      set n-smokers round ( population-density * ( world-width * world-height / 100 ))
+    ]
+  )
+
+;; Wage Cumulative Proportions
+  ;wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
+  set wage-proportions-list t-wage-proportions
+  set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
+
+  ;; create smokers with fixed home and work locations
+  if random-spatial? = false [random-seed setup-seed]
+  create-smokers (n-smokers) [
+
+    ;; Homes and work selection
+    set smokers_home one-of home-nodes
+    ask smokers_home [
+      set color white
+      set shape "house"
+      set size 0.4
+      set is-a-home 1
+    ]
+    move-to smokers_home
+    set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
+    ;; routes
+    let s_work work
+    let home_work_nodes 0
+    ask smokers_home [
+      set home_work_nodes nw:turtles-on-path-to s_work
+    ]
+    set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
+
+    ;; store neighbourhood type
+    set my-neighbourhood neighbourhood
 
 
-to generate-outlet-type [ t-name t-color t-prop  t-dist-l t-dist-m t-dist-r  ]
-    create-outlets ( round ( (world-width * world-height / 100 ) * random-normal t-prop 0.5 )) [            ;; Random-normal applies Normal Distribtion to retailer densities
+  ]
+
+  ;; fixed inventory
+  ask smokers with [my-neighbourhood = neighbourhood] [
+    ;; inventory
+    set color white
+    set shape "person"
+    set size 0.6
+    set inventory random 40
+  ]
+
+  ;; set smokers properties with everything random except smoking rates
+  if random-spatial? = false [random-seed new-seed]
+  ask smokers with [my-neighbourhood = neighbourhood] [
+    ;; discount
+    set discount (0.54 + random-float 0.46)
+
+    ;; Smoking rate initialization
+    let random-number-smoke random-float 1.0
+    let index-smoke 0
+    while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
+    let cigarettes item index-smoke cigarette-list
+    set smoking-rate cigarettes
+
+    ;; Wage initialization
+    let random-number-wage random-float 1.0
+    let index-wage 0
+    while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
+    set wage item index-wage wage-list
+    set hourly-wage ( (wage / 52) / 40 )
+
+    let rand random-float 1.0
+    set transport-type (ifelse-value
+      rand < t-car [ "car" ]
+      rand < t-walk [ "walk" ]
+      rand < t-bike [ "bike" ]
+      [ "home" ]
+    )
+    if transport-type = "home" [ die ] ;; Tobacco Town paper does not model those that work from home
+                                       ;; Proportions do not add up to 1
+
+    (ifelse
+      transport-type = "car" [set speed 21.2]
+      transport-type = "walk" [set speed 2.1]
+      transport-type = "bike" [set speed 7.5]
+    )
+  ]
+
+;; Initialise lists
+  ask smokers with [my-neighbourhood = neighbourhood] [
+  set total-distance-travelled []
+  set total-cost-for-purchase []
+  set total-cost-for-travel []
+  set total-time-for-purchase []
+  set total-cost-eq-per-pack []
+  set list-retailer-type []
+  set total-purchase-quantity []
+  ]
+
+  if random-spatial? = false [random-seed new-seed]
+
+end
+
+;; generate smokers with everything random except wages, homes, work and routes
+to generate-smokers-VC-wage [t-wage-proportions t-car t-walk t-bike neighbourhood]
+
+;;Smoking rate cumulative proportions
+  set smoking-proportions-list [0.006 0.02 0.044 0.072 0.132 0.164 0.193 0.217 0.222 0.465 0.468 0.493 0.495 0.497 0.581 0.584 0.588 0.592 0.889 0.907 0.963 0.966 0.994 0.995 0.996 1.0]
+  set cigarette-list [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 20 25 30 35 40 45 50 60]
+  let home-nodes nobody
+  let n-smokers 0
+  (ifelse
+    neighbourhood = "left" [
+      set home-nodes nodes with [pxcor < max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "right" [
+      set home-nodes nodes with [pxcor > max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "all" [
+      set home-nodes nodes
+      set n-smokers round ( population-density * ( world-width * world-height / 100 ))
+    ]
+  )
+
+;; Wage Cumulative Proportions
+  ;wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
+  set wage-proportions-list t-wage-proportions
+  set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
+
+  ;; create smokers with fixed home and work locations
+  if random-spatial? = false [random-seed setup-seed]
+  create-smokers (n-smokers) [
+
+    ;; Homes and work selection
+    set smokers_home one-of home-nodes
+    ask smokers_home [
+      set color white
+      set shape "house"
+      set size 0.4
+      set is-a-home 1
+    ]
+    move-to smokers_home
+    set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
+    ;; routes
+    let s_work work
+    let home_work_nodes 0
+    ask smokers_home [
+      set home_work_nodes nw:turtles-on-path-to s_work
+    ]
+    set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
+
+    ;; store neighbourhood type
+    set my-neighbourhood neighbourhood
+  ]
+
+  ;; fixed wages
+  ask smokers with [my-neighbourhood = neighbourhood] [
+    ;; Wage initialization
+    let random-number-wage random-float 1.0
+    let index-wage 0
+    while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
+    set wage item index-wage wage-list
+    set hourly-wage ( (wage / 52) / 40 )
+  ]
+
+  ;; set smokers properties with everything random except wages
+  if random-spatial? = false [random-seed new-seed]
+  ask smokers with [my-neighbourhood = neighbourhood] [
+    ;; Discount
+    set discount (0.54 + random-float 0.46)
+    set color white
+    set shape "person"
+    set size 0.6
+
+    ;; inventory
+    set inventory random 40
+
+    ;; Smoking rate initialization
+    let random-number-smoke random-float 1.0
+    let index-smoke 0
+    while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
+    let cigarettes item index-smoke cigarette-list
+    set smoking-rate cigarettes
+
+    ;; transport type
+    let rand random-float 1.0
+    set transport-type (ifelse-value
+      rand < t-car [ "car" ]
+      rand < t-walk [ "walk" ]
+      rand < t-bike [ "bike" ]
+      [ "home" ]
+    )
+    if transport-type = "home" [ die ] ;; Tobacco Town paper does not model those that work from home
+                                       ;; Proportions do not add up to 1
+
+    (ifelse
+      transport-type = "car" [set speed 21.2]
+      transport-type = "walk" [set speed 2.1]
+      transport-type = "bike" [set speed 7.5]
+    )
+  ]
+
+
+;; Initialise lists
+
+  ask smokers with [my-neighbourhood = neighbourhood] [
+  set total-distance-travelled []
+  set total-cost-for-purchase []
+  set total-cost-for-travel []
+  set total-time-for-purchase []
+  set total-cost-eq-per-pack []
+  set list-retailer-type []
+  set total-purchase-quantity []
+  ]
+
+  if random-spatial? = false [random-seed new-seed]
+
+end
+
+;; generate smokers with everything random except transport types, homes, work and routes
+to generate-smokers-VC-transport [t-wage-proportions t-car t-walk t-bike neighbourhood]
+
+;;Smoking rate cumulative proportions
+  set smoking-proportions-list [0.006 0.02 0.044 0.072 0.132 0.164 0.193 0.217 0.222 0.465 0.468 0.493 0.495 0.497 0.581 0.584 0.588 0.592 0.889 0.907 0.963 0.966 0.994 0.995 0.996 1.0]
+  set cigarette-list [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 20 25 30 35 40 45 50 60]
+  let home-nodes nobody
+  let n-smokers 0
+  (ifelse
+    neighbourhood = "left" [
+      set home-nodes nodes with [pxcor < max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "right" [
+      set home-nodes nodes with [pxcor > max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "all" [
+      set home-nodes nodes
+      set n-smokers round ( population-density * ( world-width * world-height / 100 ))
+    ]
+  )
+
+;; Wage Cumulative Proportions
+  ;wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
+  set wage-proportions-list t-wage-proportions
+  set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
+
+  ;; create smokers with fixed home and work locations
+  if random-spatial? = false [random-seed setup-seed]
+  create-smokers (n-smokers) [
+
+    ;; Homes and work selection
+    set smokers_home one-of home-nodes
+    ask smokers_home [
+      set color white
+      set shape "house"
+      set size 0.4
+      set is-a-home 1
+    ]
+    move-to smokers_home
+    set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
+    ;; routes
+    let s_work work
+    let home_work_nodes 0
+    ask smokers_home [
+      set home_work_nodes nw:turtles-on-path-to s_work
+    ]
+    set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
+
+    ;; store neighbourhood type
+    set my-neighbourhood neighbourhood
+  ]
+
+  ;; fixed smoking rates
+  ask smokers with [my-neighbourhood = neighbourhood] [
+    ;; transport type
+    let rand random-float 1.0
+    set transport-type (ifelse-value
+      rand < t-car [ "car" ]
+      rand < t-walk [ "walk" ]
+      rand < t-bike [ "bike" ]
+      [ "home" ]
+    )
+    if transport-type = "home" [ die ] ;; Tobacco Town paper does not model those that work from home
+                                       ;; Proportions do not add up to 1
+  ]
+
+  ;; set smokers properties with everything random except smoking rates
+  if random-spatial? = false [random-seed new-seed]
+  ask smokers with [my-neighbourhood = neighbourhood] with [my-neighbourhood = neighbourhood] [
+    ;; Discount
+    set discount (0.54 + random-float 0.46)
+    set color white
+    set shape "person"
+    set size 0.6
+
+    ;; inventory
+    set inventory random 40
+
+    ;; Smoking rate initialization
+    let random-number-smoke random-float 1.0
+    let index-smoke 0
+    while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
+    let cigarettes item index-smoke cigarette-list
+    set smoking-rate cigarettes
+
+    ;; Wage initialization
+    let random-number-wage random-float 1.0
+    let index-wage 0
+    while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
+    set wage item index-wage wage-list
+    set hourly-wage ( (wage / 52) / 40 )
+
+    (ifelse
+      transport-type = "car" [set speed 21.2]
+      transport-type = "walk" [set speed 2.1]
+      transport-type = "bike" [set speed 7.5]
+    )
+  ]
+
+
+;; Initialise lists
+
+  ask smokers with [my-neighbourhood = neighbourhood] [
+  set total-distance-travelled []
+  set total-cost-for-purchase []
+  set total-cost-for-travel []
+  set total-time-for-purchase []
+  set total-cost-eq-per-pack []
+  set list-retailer-type []
+  set total-purchase-quantity []
+  ]
+
+  if random-spatial? = false [random-seed new-seed]
+
+end
+
+;; generate smokers with everything random except homes and work (routes are random)
+to generate-smokers-V-routes [t-wage-proportions t-car t-walk t-bike neighbourhood]
+
+;;Smoking rate cumulative proportions
+  set smoking-proportions-list [0.006 0.02 0.044 0.072 0.132 0.164 0.193 0.217 0.222 0.465 0.468 0.493 0.495 0.497 0.581 0.584 0.588 0.592 0.889 0.907 0.963 0.966 0.994 0.995 0.996 1.0]
+  set cigarette-list [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 20 25 30 35 40 45 50 60]
+  let home-nodes nobody
+  let n-smokers 0
+  (ifelse
+    neighbourhood = "left" [
+      set home-nodes nodes with [pxcor < max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "right" [
+      set home-nodes nodes with [pxcor > max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "all" [
+      set home-nodes nodes
+      set n-smokers round ( population-density * ( world-width * world-height / 100 ))
+    ]
+  )
+
+;; Wage Cumulative Proportions
+  ;wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
+  set wage-proportions-list t-wage-proportions
+  set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
+
+  ;; create smokers with fixed home and work locations
+  if random-spatial? = false [random-seed setup-seed]
+  create-smokers (n-smokers) [
+    ;; Homes and work selection
+    set smokers_home one-of home-nodes
+    ask smokers_home [
+      set color white
+      set shape "house"
+      set size 0.4
+      set is-a-home 1
+    ]
+    move-to smokers_home
+    set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
+    ;; routes
+    let s_work work
+    let home_work_nodes 0
+    ask smokers_home [
+      set home_work_nodes nw:turtles-on-path-to s_work
+    ]
+    set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
+
+    ;; store neighbourhood type
+    set my-neighbourhood neighbourhood
+  ]
+
+  ;; random everything
+  if random-spatial? = false [random-seed new-seed]
+  ask smokers with [my-neighbourhood = neighbourhood] [
+    ;; routes
+    let s_work work
+    let home_work_nodes 0
+    ask smokers_home [
+      set home_work_nodes nw:turtles-on-path-to s_work
+    ]
+    set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
+
+    ;; Smoking rate initialization
+    let random-number-smoke random-float 1.0
+    let index-smoke 0
+    while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
+    let cigarettes item index-smoke cigarette-list
+    set smoking-rate cigarettes
+
+    set discount (0.54 + random-float 0.46)
+    set color white
+    set shape "person"
+    set size 0.6
+    set inventory random 40
+
+    ;; Wage initialization
+    let random-number-wage random-float 1.0
+    let index-wage 0
+    while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
+    set wage item index-wage wage-list
+    set hourly-wage ( (wage / 52) / 40 )
+
+    let rand random-float 1.0
+    set transport-type (ifelse-value
+      rand < t-car [ "car" ]
+      rand < t-walk [ "walk" ]
+      rand < t-bike [ "bike" ]
+      [ "home" ]
+    )
+    if transport-type = "home" [ die ] ;; Tobacco Town paper does not model those that work from home
+                                       ;; Proportions do not add up to 1
+
+    (ifelse
+      transport-type = "car" [set speed 21.2]
+      transport-type = "walk" [set speed 2.1]
+      transport-type = "bike" [set speed 7.5]
+    )
+
+  ]
+
+;; Initialise lists
+  ask smokers with [my-neighbourhood = neighbourhood] [
+  set total-distance-travelled []
+  set total-cost-for-purchase []
+  set total-cost-for-travel []
+  set total-time-for-purchase []
+  set total-cost-eq-per-pack []
+  set list-retailer-type []
+  set total-purchase-quantity []
+  ]
+
+  if random-spatial? = false [random-seed new-seed]
+
+end
+
+;; generate smokers with everything random except smoking routes
+to generate-smokers-VC-routes [t-wage-proportions t-car t-walk t-bike neighbourhood]
+
+;;Smoking rate cumulative proportions
+  set smoking-proportions-list [0.006 0.02 0.044 0.072 0.132 0.164 0.193 0.217 0.222 0.465 0.468 0.493 0.495 0.497 0.581 0.584 0.588 0.592 0.889 0.907 0.963 0.966 0.994 0.995 0.996 1.0]
+  set cigarette-list [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 20 25 30 35 40 45 50 60]
+  let home-nodes nobody
+  let n-smokers 0
+  (ifelse
+    neighbourhood = "left" [
+      set home-nodes nodes with [pxcor < max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "right" [
+      set home-nodes nodes with [pxcor > max-pxcor / 2]
+      set n-smokers round ( population-density * ( world-width * world-height / 200 ))
+    ]
+    neighbourhood = "all" [
+      set home-nodes nodes
+      set n-smokers round ( population-density * ( world-width * world-height / 100 ))
+    ]
+  )
+
+;; Wage Cumulative Proportions
+  ;wage-proportions [0.078 0.154 0.318 0.452 0.632 0.786 0.892 0.966 0.991 1.0]
+  set wage-proportions-list t-wage-proportions
+  set wage-list [5000 12500 20000 30000 42500 62500 87500 125000 175000 250000]
+
+
+  ;; create smokers with fixed home and work locations
+  if random-spatial? = false [random-seed setup-seed]
+  create-smokers (n-smokers) [
+    ;; Homes and work selection
+    set smokers_home one-of home-nodes
+    ask smokers_home [
+      set color white
+      set shape "house"
+      set size 0.4
+      set is-a-home 1
+    ]
+    move-to smokers_home
+    set work one-of nodes with [ is-a-workplace = 1 and distance myself > 0 ]
+    ;; routes
+    let s_work work
+    let home_work_nodes 0
+    ask smokers_home [
+      set home_work_nodes nw:turtles-on-path-to s_work
+    ]
+    set commute_nodes turtle-set home_work_nodes      ;; Stores nodes on smokers commute
+
+    ;; store neighbourhood type
+    set my-neighbourhood neighbourhood
+  ]
+
+  ;; everything random except routes
+  if random-spatial? = false [random-seed new-seed]
+  ask smokers with [my-neighbourhood = neighbourhood] [
+    ;; Smoking rate initialization
+    let random-number-smoke random-float 1.0
+    let index-smoke 0
+    while [index-smoke < length smoking-proportions-list - 1 and random-number-smoke > item index-smoke smoking-proportions-list] [set index-smoke index-smoke + 1]
+    let cigarettes item index-smoke cigarette-list
+    set smoking-rate cigarettes
+
+    ;; Discount and inventory
+    set discount (0.54 + random-float 0.46)
+    set color white
+    set shape "person"
+    set size 0.6
+    set inventory random 40
+
+    ;; Wage initialization
+    let random-number-wage random-float 1.0
+    let index-wage 0
+    while [index-wage < length wage-proportions-list - 1 and random-number-wage > item index-wage wage-proportions-list] [set index-wage index-wage + 1]
+    set wage item index-wage wage-list
+    set hourly-wage ( (wage / 52) / 40 )
+
+    let rand random-float 1.0
+    set transport-type (ifelse-value
+      rand < t-car [ "car" ]
+      rand < t-walk [ "walk" ]
+      rand < t-bike [ "bike" ]
+      [ "home" ]
+    )
+    if transport-type = "home" [ die ] ;; Tobacco Town paper does not model those that work from home
+                                       ;; Proportions do not add up to 1
+
+    (ifelse
+      transport-type = "car" [set speed 21.2]
+      transport-type = "walk" [set speed 2.1]
+      transport-type = "bike" [set speed 7.5]
+    )
+  ]
+
+;; Initialise lists
+  ask smokers with [my-neighbourhood = neighbourhood] [
+  set total-distance-travelled []
+  set total-cost-for-purchase []
+  set total-cost-for-travel []
+  set total-time-for-purchase []
+  set total-cost-eq-per-pack []
+  set list-retailer-type []
+  set total-purchase-quantity []
+  ]
+
+  if random-spatial? = false [random-seed new-seed]
+
+end
+
+to generate-outlet-type [ t-name t-color t-prop  t-dist-l t-dist-m t-dist-r  neighbourhood]
+  ;; find the neighbourhood nodes (left or right or all the space) and calculate the number of outlets to create
+  let neighbourhood-nodes nobody
+  let n-outlets 0
+  (ifelse
+    neighbourhood = "left" [
+      set neighbourhood-nodes nodes with [xcor < max-pxcor / 2]
+      set n-outlets round ( (world-width * world-height / 200 ) * random-normal t-prop 0.5 )
+    ]
+    neighbourhood = "right" [
+      set neighbourhood-nodes nodes with [xcor > max-pxcor / 2]
+      set n-outlets round ( (world-width * world-height / 200 ) * random-normal t-prop 0.5 )
+    ]
+    neighbourhood = "all" [
+      set neighbourhood-nodes nodes
+      set n-outlets round ( (world-width * world-height / 100 ) * random-normal t-prop 0.5 )
+    ]
+  )
+
+  create-outlets ( n-outlets ) [            ;; Random-normal applies Normal Distribtion to retailer densities
     set outlet-type t-name
     set color t-color
     set shape "target"
     set size 0.4
     set price price-normal-dist t-dist-l t-dist-m t-dist-r
-    set outlet_place one-of nodes with [ is-an-outlet = 0 ]
+    set outlet_place one-of neighbourhood-nodes with [ is-an-outlet = 0 ]
+    set outlet_place one-of neighbourhood-nodes with [ is-an-outlet = 0 ]
     ask outlet_place [
       set is-an-outlet 1
     ]
@@ -565,13 +1393,33 @@ to generate-outlet-type [ t-name t-color t-prop  t-dist-l t-dist-m t-dist-r  ]
 
 end
 
-to generate-schools
-
-    create-schools ( school-density * (world-height * world-width / 100 ) ) [
+to generate-schools [density neighbourhood]
+  ;; find the neighbourhood nodes (left or right or all the space) and calculate the number of schools to create
+  let neighbourhood-nodes nobody
+  let n-schools 0
+  (ifelse
+    neighbourhood = "left" [
+      set neighbourhood-nodes nodes with [xcor < max-pxcor / 2]
+      if density > ( (count neighbourhood-nodes) / ( world-width * world-height / 200 ) ) [ set density ( (count neighbourhood-nodes) / ( world-width * world-height / 200 ) ) ] ;; If workplace density saturates nodes then workplace-density is set to node-density
+      set n-schools round ( (world-width * world-height / 200 ) * density )
+    ]
+    neighbourhood = "right" [
+      set neighbourhood-nodes nodes with [xcor > max-pxcor / 2]
+      if density > ( (count neighbourhood-nodes) / ( world-width * world-height / 200 ) ) [ set density ( (count neighbourhood-nodes) / ( world-width * world-height / 200 ) ) ] ;; If workplace density saturates nodes then workplace-density is set to node-density
+      set n-schools round ( (world-width * world-height / 200 ) * density )
+    ]
+    neighbourhood = "all" [
+      set neighbourhood-nodes nodes
+      if density > ( (count neighbourhood-nodes) / ( world-width * world-height / 100 ) ) [ set density ( (count neighbourhood-nodes) / ( world-width * world-height / 100 ) ) ] ;; If workplace density saturates nodes then workplace-density is set to node-density
+      set n-schools round ( (world-width * world-height / 100 ) * density )
+    ]
+  )
+  ;; create the schools
+  create-schools ( n-schools )  [
     set color 55
     set shape "tree"
     set size 0.4
-    move-to one-of nodes
+    move-to one-of neighbourhood-nodes
   ]
 end
 
@@ -914,19 +1762,15 @@ to update-globals
   set median-wage map [p -> [(list pxcor pycor smokers-median-wage)] of p] (sort patches)
   set median-rate map [p -> [(list pxcor pycor smokers-median-rate)] of p] (sort patches)
 end
-
-
-
-
 @#$#@#$#@
 GRAPHICS-WINDOW
-228
-10
-659
-442
+255
+29
+668
+443
 -1
 -1
-13.22
+12.66
 1
 10
 1
@@ -948,9 +1792,9 @@ ticks
 
 BUTTON
 7
-159
+167
 70
-192
+200
 NIL
 setup
 NIL
@@ -966,17 +1810,17 @@ NIL
 CHOOSER
 8
 34
-206
+247
 79
 town-type
 town-type
-"Suburban Poor" "Suburban Rich" "Urban Poor" "Urban Rich"
-2
+"Suburban Poor" "Suburban Rich" "Urban Poor" "Urban Rich" "Urban Poor | Urban Rich" "Urban Poor (no work or outlets) | Urban Rich"
+5
 
 MONITOR
-853
+881
 10
-1055
+1083
 55
 Population Density (per square mile)
 count smokers / ((world-height * world-width) / 100 )
@@ -985,9 +1829,9 @@ count smokers / ((world-height * world-width) / 100 )
 11
 
 PLOT
-851
+879
 376
-1051
+1079
 526
 Smoking Rate Distribution
 Smoking Rate (per day)
@@ -1003,9 +1847,9 @@ PENS
 "default" 1.0 0 -16777216 true "" "histogram [smoking-rate] of smokers"
 
 PLOT
-849
+877
 216
-1049
+1077
 366
 Wage Distribution
 Wage ($)
@@ -1021,9 +1865,9 @@ PENS
 "default" 1.0 0 -16777216 true "" "histogram [wage] of smokers"
 
 MONITOR
-853
+881
 59
-1055
+1083
 104
 Total Retailer Density (per sqaure mile)
 count outlets / (world-height * world-width / 100)
@@ -1032,9 +1876,9 @@ count outlets / (world-height * world-width / 100)
 11
 
 MONITOR
-853
+881
 108
-1055
+1083
 153
 School Density (per square mile)
 count schools / (world-width * world-height / 100 )
@@ -1043,9 +1887,9 @@ count schools / (world-width * world-height / 100 )
 11
 
 MONITOR
-472
+500
 496
-565
+593
 541
 NIL
 mode
@@ -1054,9 +1898,9 @@ mode
 11
 
 SLIDER
-668
+696
 37
-840
+868
 70
 retailer-density-cap
 retailer-density-cap
@@ -1069,9 +1913,9 @@ retailer-density-cap
 HORIZONTAL
 
 CHOOSER
-669
+697
 74
-807
+835
 119
 school-buffer
 school-buffer
@@ -1079,9 +1923,9 @@ school-buffer
 0
 
 CHOOSER
-670
+698
 123
-840
+868
 168
 retailer-min-distance-buffer
 retailer-min-distance-buffer
@@ -1089,9 +1933,9 @@ retailer-min-distance-buffer
 0
 
 CHOOSER
-670
+698
 173
-808
+836
 218
 retailer-removal
 retailer-removal
@@ -1099,9 +1943,9 @@ retailer-removal
 0
 
 BUTTON
-673
+701
 222
-794
+822
 255
 NIL
 density-reduction\n
@@ -1116,9 +1960,9 @@ NIL
 1
 
 MONITOR
-567
+595
 450
-624
+652
 495
 NIL
 day
@@ -1128,9 +1972,9 @@ day
 
 SLIDER
 7
-84
-209
-117
+91
+247
+124
 number-of-days
 number-of-days
 1
@@ -1142,9 +1986,9 @@ days
 HORIZONTAL
 
 MONITOR
-853
+881
 161
-973
+1001
 206
 Area (square miles)
 (world-height * world-width ) / 100
@@ -1154,9 +1998,9 @@ Area (square miles)
 
 SWITCH
 7
-122
-135
-155
+129
+247
+162
 buy-cartons?
 buy-cartons?
 0
@@ -1174,9 +2018,9 @@ SETUP
 0
 
 TEXTBOX
-676
+704
 12
-826
+854
 32
 POLICY TESTING
 16
@@ -1185,9 +2029,9 @@ POLICY TESTING
 
 BUTTON
 78
-160
+167
 166
-193
+200
 NIL
 run-fast
 T
@@ -1201,9 +2045,9 @@ NIL
 1
 
 MONITOR
-472
+500
 450
-565
+593
 495
 NIL
 average-costs
@@ -1212,9 +2056,9 @@ average-costs
 11
 
 CHOOSER
-228
+256
 451
-410
+438
 496
 visualise-mode-patches
 visualise-mode-patches
@@ -1222,9 +2066,9 @@ visualise-mode-patches
 0
 
 BUTTON
-412
+440
 451
-467
+495
 542
 visualise
 visualise
@@ -1239,9 +2083,9 @@ NIL
 1
 
 TEXTBOX
-232
+260
 571
-382
+410
 597
 Smokers
 12
@@ -1249,9 +2093,9 @@ Smokers
 1
 
 TEXTBOX
-232
+260
 587
-456
+484
 605
 red --> smoker that made a purchase today
 10
@@ -1259,9 +2103,9 @@ red --> smoker that made a purchase today
 1
 
 TEXTBOX
-232
+260
 602
-505
+533
 620
 black --> smoker that did not make a purchase today
 10
@@ -1269,9 +2113,9 @@ black --> smoker that did not make a purchase today
 1
 
 TEXTBOX
-232
+260
 649
-526
+554
 675
 More saturated red patch colours indicate higher quantity/price
 10
@@ -1279,9 +2123,9 @@ More saturated red patch colours indicate higher quantity/price
 1
 
 CHOOSER
-228
+256
 497
-410
+438
 542
 visualise-mode-turtles
 visualise-mode-turtles
@@ -1289,34 +2133,51 @@ visualise-mode-turtles
 1
 
 TEXTBOX
-232
+260
 631
-382
+410
 649
 Patches
 12
 0.0
 1
 
+CHOOSER
+6
+241
+206
+286
+Smokers-parameters
+Smokers-parameters
+"Random (V)" "Random (V routes)" "Random rate (VC rates)" "Random inventory (VC inventory)" "Random wage (VC wage)" "Random transport (VC transport)" "Random routes (VC routes)" "All random (ignore random-spatial?)"
+1
+
 SWITCH
 7
-195
-146
-228
+202
+166
+235
 random-spatial?
 random-spatial?
 1
 1
 -1000
 
-CHOOSER
-6
-234
-219
-279
-Smokers-parameters
-Smokers-parameters
-"Random wages and smoking rates (V)" "Random wages (VC rates)" "All random (ignore random-spatial?)"
+BUTTON
+7
+293
+157
+326
+debug
+setup\nask smoker 1574 [\ntype self type \" | \"\ntype \"wage = \" type wage type \", \"\ntype \"discount = \" type discount type \", \"\ntype \"inventory = \" type inventory type \", \"\ntype \"smoking-rate = \" type smoking-rate type \", \"\ntype \"transport-type = \" type transport-type type \"\\n\"\nask commute_nodes [set pcolor red]\n]
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
 1
 
 @#$#@#$#@
@@ -1338,6 +2199,30 @@ Model uses distance off commute to retailer:
 All other variables from Tobacco Town Supplement
 
 ## Updates
+
+Version 1.0.7 (YG)
+
+1. Addressed an issue where `generate-outlets` allocated outlets in all the space regardless of whether we input `neighbourhood` as "left" or "right"
+
+Version 1.0.6 (YG)
+
+2. Added the functionality to create an initial space with urban poor in the west ("left") and urban rich in the east ("right"). An input labelled `neighbourhood` has been added to the following functions to control whether it is applied to the "left" or "right" side of the space.
+	- all the `generate-smokers` functions
+	- `generate-outlet-type`
+	- `generate-workplaces`
+	- `generate-schools`
+
+Version 1.0.5 (YG)
+
+1. Adressed an issue where `generate-smokers-VC-rate` generated fixed inventory values. This should not be the case as this function should only generate fixed smoking rates.
+2. Added functions:
+	- `generate-smokers-VC-wage` --> generate smokers with everything random except wages
+	- `generate-smokers-VC-inventory` --> generate smokers with everything random except their inventory
+	- `generate-smokers-VC-transport` --> generate smokers with everything random except transport types
+	- `generate-smokers-VC-routes` --> generate smokers with everything random except transport routs
+	- `generate-smokers-V-routes` --> generate smokers with everything random including routes
+
+Note: `generate-smokers-V` generates smokers with everything random including transport routes
 
 Version 1.0.4 (YG)
 
@@ -1927,7 +2812,7 @@ NetLogo 6.4.0
       <value value="100"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="uncertainty_smokingrate" repetitions="1000" runMetricsEveryStep="true">
+  <experiment name="uncertainy" repetitions="1000" runMetricsEveryStep="false">
     <setup>setup
 update-globals</setup>
     <go>run-fast
@@ -1937,6 +2822,7 @@ update-globals</go>
     <metric>median-cost</metric>
     <metric>median-wage</metric>
     <metric>median-rate</metric>
+    <runMetricsCondition>ticks = 1 or ticks = 30</runMetricsCondition>
     <enumeratedValueSet variable="visualise-mode-patches">
       <value value="&quot;Smokers avg. purchase cost&quot;"/>
     </enumeratedValueSet>
@@ -1954,6 +2840,7 @@ update-globals</go>
     </enumeratedValueSet>
     <enumeratedValueSet variable="town-type">
       <value value="&quot;Urban Poor&quot;"/>
+      <value value="&quot;Urban Poor | Urban Rich&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="school-buffer">
       <value value="&quot;None&quot;"/>
@@ -1968,8 +2855,59 @@ update-globals</go>
       <value value="100"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Smokers-parameters">
-      <value value="&quot;Random wages and smoking rates (V)&quot;"/>
-      <value value="&quot;Random wages (VC rates)&quot;"/>
+      <value value="&quot;Random (V)&quot;"/>
+      <value value="&quot;Random (V routes)&quot;"/>
+      <value value="&quot;Random rate (VC rates)&quot;"/>
+      <value value="&quot;Random inventory (VC inventory)&quot;"/>
+      <value value="&quot;Random wage (VC wage)&quot;"/>
+      <value value="&quot;Random transport (VC transport)&quot;"/>
+      <value value="&quot;Random routes (VC routes)&quot;"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="uncertainy_workOutletsEast_routes" repetitions="1000" runMetricsEveryStep="false">
+    <setup>setup
+update-globals</setup>
+    <go>run-fast
+update-globals</go>
+    <exitCondition>ticks = number-of-days</exitCondition>
+    <metric>median-quantity</metric>
+    <metric>median-cost</metric>
+    <metric>median-wage</metric>
+    <metric>median-rate</metric>
+    <runMetricsCondition>ticks = 1 or ticks = 30</runMetricsCondition>
+    <enumeratedValueSet variable="visualise-mode-patches">
+      <value value="&quot;Smokers avg. purchase cost&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="visualise-mode-turtles">
+      <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-days">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="buy-cartons?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="retailer-removal">
+      <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="town-type">
+      <value value="&quot;Urban Poor (no work or outlets) | Urban Rich&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="school-buffer">
+      <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="retailer-min-distance-buffer">
+      <value value="&quot;None&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="random-spatial?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="retailer-density-cap">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Smokers-parameters">
+      <value value="&quot;Random (V routes)&quot;"/>
+      <value value="&quot;Random routes (VC routes)&quot;"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
